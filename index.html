@@ -14,6 +14,8 @@
   <meta property="og:image" content="https://journal.fangviper.com/assets/p1.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#000000">
+  <link rel="preload" as="image" href="assets/cover.jpg">
+  <noscript><style>.reveal { display: none; }</style></noscript>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
@@ -89,6 +91,51 @@
       transition: background .2s, color .2s;
     }
     .btn:hover { background: #fff; color: #000; }
+
+    /* ---------- scroll intro: notebook zooms in, then opens ---------- */
+    .reveal { position: relative; height: 480vh; background: #000; }
+    .stage {
+      position: sticky; top: 64px; height: calc(100vh - 64px); height: calc(100svh - 64px);
+      overflow: hidden; display: grid; place-items: center; background: #000;
+      --bh: min(44svh, calc(70vw * 1.5425));
+      --bw: calc(var(--bh) * .6483);
+    }
+    .stage::before {
+      content: ""; position: absolute; left: 50%; top: 50%; width: 90vmin; height: 90vmin;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(closest-side, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+    .rig {
+      position: relative; width: var(--bw); height: var(--bh); will-change: transform;
+      filter: drop-shadow(0 0 1px rgba(255, 255, 255, .6)) drop-shadow(0 0 34px rgba(255, 255, 255, .2));
+    }
+    .book { position: absolute; inset: 0; perspective: 2400px; transform-style: preserve-3d; }
+    .leaf {
+      position: absolute; top: 1.2%; bottom: 1.2%; left: 0; right: 1.4%;
+      background: #f2e8cd; transform: translateZ(-2px); border-radius: 0 3px 3px 0;
+    }
+    .leaf::before {
+      content: ""; position: absolute; inset: 6% 5% 5% 9%;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--bh) / 24 - 1px), rgba(70, 60, 40, .3) calc(var(--bh) / 24 - 1px), rgba(70, 60, 40, .3) calc(var(--bh) / 24));
+    }
+    .leaf::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(to right, rgba(0, 0, 0, .34), rgba(0, 0, 0, 0) 16%), linear-gradient(to left, rgba(0, 0, 0, .1), rgba(0, 0, 0, 0) 6%);
+    }
+    .cover { position: absolute; inset: 0; transform-origin: 0 50%; transform-style: preserve-3d; }
+    .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 3px 5% 5% 3% / 3px 2.4% 2.4% 3px; }
+    .face.front { background: #000 url(assets/cover.jpg) center / 100% 100% no-repeat; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+    .face.back { transform: rotateY(180deg); background: linear-gradient(to right, #0b0b0b, #161616); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); }
+    .hint, .cap { position: absolute; left: 0; right: 0; text-align: center; pointer-events: none; }
+    .hint { bottom: 4%; font: 500 11px/1 var(--body); letter-spacing: .34em; text-transform: uppercase; color: var(--mute); }
+    .hint::after { content: ""; display: block; width: 1px; height: 34px; margin: 14px auto 0; background: linear-gradient(to bottom, rgba(255, 255, 255, .7), rgba(255, 255, 255, 0)); }
+    .cap { bottom: 3.5%; opacity: 0; }
+    .cap b { display: block; font: 400 clamp(30px, 5vw, 52px)/1 var(--display); letter-spacing: .04em; text-transform: uppercase; }
+    .cap span { display: block; margin-top: 8px; font-size: 13px; color: var(--mute); }
+    .skip { position: absolute; right: 20px; bottom: 16px; font: 500 11px/1 var(--body); letter-spacing: .24em; text-transform: uppercase; color: var(--mute); transition: color .2s; }
+    .skip:hover { color: #fff; }
+    @media (prefers-reduced-motion: reduce) { .reveal { display: none; } }
 
     /* ---------- hero ---------- */
     .hero { padding: clamp(36px, 6vw, 88px) 0; }
@@ -253,6 +300,21 @@
 </header>
 
 <main>
+  <!-- SCROLL INTRO -->
+  <div class="reveal" id="intro">
+    <div class="stage" id="stage" role="img" aria-label="A black ONE LIFE hardcover journal opens to reveal blank, lined cream pages">
+      <div class="rig" id="rig">
+        <div class="book">
+          <div class="leaf"></div>
+          <div class="cover" id="cover"><div class="face front"></div><div class="face back"></div></div>
+        </div>
+      </div>
+      <p class="hint" id="hint">Scroll</p>
+      <p class="cap" id="cap"><b>Blank on purpose.</b><span>80 cream pages. Lined. Waiting for your plan.</span></p>
+      <a class="skip" href="#buy">Skip</a>
+    </div>
+  </div>
+
   <!-- HERO -->
   <div class="hero" id="buy">
     <div class="wrap">
@@ -553,12 +615,48 @@
       });
     });
 
-    // show the mobile buy bar once the hero button has scrolled out of view
+    // show the mobile buy bar once the hero button has scrolled past the top (not during the intro)
     var bar = document.getElementById("bar");
     var heroBtn = document.querySelector(".btn--hero");
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (e) { bar.classList.toggle("on", !e[0].isIntersecting); }).observe(heroBtn);
+      new IntersectionObserver(function (e) {
+        bar.classList.toggle("on", !e[0].isIntersecting && e[0].boundingClientRect.top < 0);
+      }).observe(heroBtn);
     }
+
+    // intro: zoom the closed notebook in, then open the cover, driven by scroll
+    var intro = document.getElementById("intro");
+    var stage = document.getElementById("stage");
+    var rig = document.getElementById("rig");
+    var cover = document.getElementById("cover");
+    var hint = document.getElementById("hint");
+    var cap = document.getElementById("cap");
+    var ticking = false;
+    function clamp(v) { return Math.max(0, Math.min(1, v)); }
+    function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function frame() {
+      ticking = false;
+      var r = intro.getBoundingClientRect();
+      var total = intro.offsetHeight - stage.offsetHeight;
+      var p = clamp(-r.top / total);
+      var bw = rig.offsetWidth, bh = rig.offsetHeight;
+      var sw = stage.clientWidth, sh = stage.clientHeight;
+      var Z = Math.max(1, Math.min(.72 * sh / bh, .9 * sw / bw));
+      var z = ease(clamp(p / .4));
+      var o = ease(clamp((p - .45) / .47));
+      var s = 1 + (Z - 1) * z;
+      var fits = 2 * bw * Z <= .94 * sw;
+      var tx = fits ? o * bw * s / 2 : 0;
+      var ty = -.05 * sh * o;
+      rig.style.transform = "translate(" + tx.toFixed(1) + "px," + ty.toFixed(1) + "px) scale(" + s.toFixed(4) + ")";
+      cover.style.transform = "rotateY(" + (-178 * o).toFixed(2) + "deg)";
+      hint.style.opacity = String(1 - clamp(p / .06));
+      cap.style.opacity = String(clamp((p - .86) / .1));
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    frame();
   })();
 </script>
 </body>
